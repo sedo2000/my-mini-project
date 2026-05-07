@@ -49,13 +49,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(rawData, &update); err == nil {
 		handleUpdates(bot, update, r)
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
 func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request) {
 	const channelUsername = "@boxtoolls"
-	webAppURL := "https://" + r.Host + "/indexq.html"
+	webAppURL := "https://" + r.Host + "/web/index.html"
 
 	if update.CallbackQuery != nil && update.CallbackQuery.Data == "verify_sub" {
 		userID := update.CallbackQuery.From.ID
@@ -73,13 +72,13 @@ func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request
 	if update.Message != nil {
 		userID := update.Message.From.ID
 		if checkSubscription(bot, channelUsername, userID) {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "اضغط بالأسفل لفتح التطبيق:")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "أهلاً بك! اضغط بالأسفل لفتح التطبيق:")
 			msg.ReplyMarkup = createMainKeyboard(webAppURL)
 			bot.Send(msg)
 		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ اشترك في القناة أولاً.")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ عذراً، يجب عليك الاشتراك في قناة البوت أولاً لتتمكن من استخدامه.")
 			btnSub := tgbotapi.NewInlineKeyboardButtonURL("📢 اشترك هنا", "https://t.me/boxtoolls")
-			btnVerify := tgbotapi.NewInlineKeyboardButtonData("✅ تحقق", "verify_sub")
+			btnVerify := tgbotapi.NewInlineKeyboardButtonData("✅ تحقق من الاشتراك", "verify_sub")
 			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(btnSub),
 				tgbotapi.NewInlineKeyboardRow(btnVerify),
@@ -96,14 +95,10 @@ func checkSubscription(bot *tgbotapi.BotAPI, channel string, userID int64) bool 
 	return err == nil && (member.Status == "member" || member.Status == "administrator" || member.Status == "creator")
 }
 
-// تعديل الدالة لتجنب أخطاء الـ Build تماماً
 func createMainKeyboard(url string) tgbotapi.InlineKeyboardMarkup {
-	// تعريف الزر بشكل يدوي مباشر
 	button := tgbotapi.InlineKeyboardButton{
 		Text: "🔗 دخول الاختبار",
 		WebApp: &tgbotapi.WebAppInfo{URL: url},
 	}
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(button),
-	)
+	return tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(button))
 }
