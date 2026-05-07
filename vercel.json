@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/index.go", "use": "@vercel/go" },
+    { "src": "web/index.html", "use": "@vercel/static" }
+  ],
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index.go" },
+    { "source": "/", "destination": "/web/index.html" }
+  ]
+}
