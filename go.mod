@@ -1,4 +1,4 @@
-module github.com/sedo2000/TinyTuneBot
+module github.com/sedo2000/my-mini-project
 
 go 1.21
 
