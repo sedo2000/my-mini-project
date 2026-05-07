@@ -9,7 +9,6 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// هيكل البيانات المستلمة من التطبيق المصغر
 type WebAppSignal struct {
 	UserID   int64  `json:"user_id"`
 	UserName string `json:"user_name"`
@@ -17,7 +16,6 @@ type WebAppSignal struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	// إعدادات CORS للسماح بالاتصال من المتصفح
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -39,16 +37,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. معالجة الإشارات القادمة من الـ Mini App (الترحيب)
 	var signal WebAppSignal
 	if err := json.Unmarshal(rawData, &signal); err == nil && signal.Action == "welcome_trigger" {
-		msg := tgbotapi.NewMessage(signal.UserID, fmt.Sprintf("أهلاً بك يا %s! ✨ تم الدخول بنجاح، بالتوفيق في الاختبار.", signal.UserName))
+		msg := tgbotapi.NewMessage(signal.UserID, fmt.Sprintf("أهلاً بك يا %s! ✨ تم الدخول بنجاح.", signal.UserName))
 		bot.Send(msg)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// 2. معالجة تحديثات تيليجرام (الرسائل والأزرار)
 	var update tgbotapi.Update
 	if err := json.Unmarshal(rawData, &update); err == nil {
 		handleUpdates(bot, update, r)
@@ -58,28 +54,23 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request) {
-	const channelUsername = "@boxtoolls" // اسم قناتك
-	// رابط التطبيق (تلقائي حسب دومين المشروع)
+	const channelUsername = "@boxtoolls"
 	webAppURL := "https://" + r.Host + "/indexq.html"
 
-	// إذا ضغط المستخدم على زر "تحقق من الاشتراك"
 	if update.CallbackQuery != nil && update.CallbackQuery.Data == "verify_sub" {
 		userID := update.CallbackQuery.From.ID
 		if checkSubscription(bot, channelUsername, userID) {
-			// حذف رسالة التحقق وإرسال زر الدخول
 			bot.Send(tgbotapi.NewDeleteMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID))
 			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "✅ تم التحقق! يمكنك الآن الدخول:")
 			msg.ReplyMarkup = createMainKeyboard(webAppURL)
 			bot.Send(msg)
 		} else {
-			// إظهار تنبيه للمستخدم
 			callbackConfig := tgbotapi.NewCallbackWithAlert(update.CallbackQuery.ID, "❌ لم تشترك في القناة بعد!")
 			bot.Request(callbackConfig)
 		}
 		return
 	}
 
-	// إذا أرسل المستخدم رسالة (مثل /start)
 	if update.Message != nil {
 		userID := update.Message.From.ID
 		if checkSubscription(bot, channelUsername, userID) {
@@ -87,17 +78,18 @@ func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request
 			msg.ReplyMarkup = createMainKeyboard(webAppURL)
 			bot.Send(msg)
 		} else {
-			// رسالة الاشتراك الإجباري
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ عذراً، يجب عليك الاشتراك في قناة البوت أولاً لتتمكن من استخدامه.")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ عذراً، يجب عليك الاشتراك في قناة البوت أولاً.")
 			btnSub := tgbotapi.NewInlineKeyboardButtonURL("📢 اشترك هنا", "https://t.me/boxtoolls")
 			btnVerify := tgbotapi.NewInlineKeyboardButtonData("✅ تحقق من الاشتراك", "verify_sub")
-			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(btnSub), tgbotapi.NewInlineKeyboardRow(btnVerify))
+			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(btnSub),
+				tgbotapi.NewInlineKeyboardRow(btnVerify),
+			)
 			bot.Send(msg)
 		}
 	}
 }
 
-// دالة التحقق من الاشتراك
 func checkSubscription(bot *tgbotapi.BotAPI, channel string, userID int64) bool {
 	member, err := bot.GetChatMember(tgbotapi.GetChatMemberConfig{
 		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{SuperGroupUsername: channel, UserID: userID},
@@ -108,9 +100,14 @@ func checkSubscription(bot *tgbotapi.BotAPI, channel string, userID int64) bool 
 	return member.Status == "member" || member.Status == "administrator" || member.Status == "creator"
 }
 
-// دالة إنشاء زر فتح التطبيق المصغر
+// الكود المصحح هنا لتجنب خطأ الـ Build
 func createMainKeyboard(url string) tgbotapi.InlineKeyboardMarkup {
-	webApp := tgbotapi.WebAppInfo{URL: url}
-	btn := tgbotapi.NewInlineKeyboardButtonWebApp("🔗 دخول الاختبار", webApp)
-	return tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(btn))
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.InlineKeyboardButton{
+				Text: "🔗 دخول الاختبار",
+				WebApp: &tgbotapi.WebAppInfo{URL: url},
+			},
+		),
+	)
 }
