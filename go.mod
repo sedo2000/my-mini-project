@@ -1,4 +1,4 @@
-module my-mini-project
+module github.com/sedo2000/my-mini-project
 
 go 1.20
 
