@@ -65,8 +65,7 @@ func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request
 			msg.ReplyMarkup = createMainKeyboard(webAppURL)
 			bot.Send(msg)
 		} else {
-			callbackConfig := tgbotapi.NewCallbackWithAlert(update.CallbackQuery.ID, "❌ لم تشترك في القناة بعد!")
-			bot.Request(callbackConfig)
+			bot.Request(tgbotapi.NewCallbackWithAlert(update.CallbackQuery.ID, "❌ لم تشترك بعد!"))
 		}
 		return
 	}
@@ -74,13 +73,13 @@ func handleUpdates(bot *tgbotapi.BotAPI, update tgbotapi.Update, r *http.Request
 	if update.Message != nil {
 		userID := update.Message.From.ID
 		if checkSubscription(bot, channelUsername, userID) {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "أهلاً بك مجدداً! اضغط بالأسفل للبدء:")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "اضغط بالأسفل لفتح التطبيق:")
 			msg.ReplyMarkup = createMainKeyboard(webAppURL)
 			bot.Send(msg)
 		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ عذراً، يجب عليك الاشتراك في قناة البوت أولاً.")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⚠️ اشترك في القناة أولاً.")
 			btnSub := tgbotapi.NewInlineKeyboardButtonURL("📢 اشترك هنا", "https://t.me/boxtoolls")
-			btnVerify := tgbotapi.NewInlineKeyboardButtonData("✅ تحقق من الاشتراك", "verify_sub")
+			btnVerify := tgbotapi.NewInlineKeyboardButtonData("✅ تحقق", "verify_sub")
 			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(btnSub),
 				tgbotapi.NewInlineKeyboardRow(btnVerify),
@@ -94,20 +93,17 @@ func checkSubscription(bot *tgbotapi.BotAPI, channel string, userID int64) bool 
 	member, err := bot.GetChatMember(tgbotapi.GetChatMemberConfig{
 		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{SuperGroupUsername: channel, UserID: userID},
 	})
-	if err != nil {
-		return false
-	}
-	return member.Status == "member" || member.Status == "administrator" || member.Status == "creator"
+	return err == nil && (member.Status == "member" || member.Status == "administrator" || member.Status == "creator")
 }
 
-// الكود المصحح هنا لتجنب خطأ الـ Build
+// تعديل الدالة لتجنب أخطاء الـ Build تماماً
 func createMainKeyboard(url string) tgbotapi.InlineKeyboardMarkup {
+	// تعريف الزر بشكل يدوي مباشر
+	button := tgbotapi.InlineKeyboardButton{
+		Text: "🔗 دخول الاختبار",
+		WebApp: &tgbotapi.WebAppInfo{URL: url},
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.InlineKeyboardButton{
-				Text: "🔗 دخول الاختبار",
-				WebApp: &tgbotapi.WebAppInfo{URL: url},
-			},
-		),
+		tgbotapi.NewInlineKeyboardRow(button),
 	)
 }
